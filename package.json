@@ -1,0 +1,25 @@
+{
+  "name": "blockchain",
+  "version": "1.0.0",
+  "description": "Blockchain Prototype",
+  "main": "entry.js",
+  "scripts": {
+    "start": "nodemon entry.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "blockchain",
+    "javascript",
+    "distributed",
+    "ledger"
+  ],
+  "author": "Pringle Code",
+  "license": "MIT",
+  "devDependencies": {
+    "nodemon": "^2.0.16"
+  },
+  "dependencies": {
+    "bcrypt": "^5.0.1",
+    "express": "^4.18.1"
+  }
+}
