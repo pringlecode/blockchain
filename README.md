@@ -1,5 +1,7 @@
 # Blockchain
 
+#### By PringleCode
+
 This is just a sandbox blockchain I am building while I learn about blockchain technology.
 
 Feel free to use it with in accordance with the standard MIT licence found in `LICENSE.md`
