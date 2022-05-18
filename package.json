@@ -3,10 +3,7 @@
   "version": "1.0.0",
   "description": "Blockchain Prototype",
   "main": "entry.js",
-  "scripts": {
-    "start": "nodemon entry.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
+  "private": true,
   "keywords": [
     "blockchain",
     "javascript",
@@ -15,11 +12,46 @@
   ],
   "author": "Pringle Code",
   "license": "MIT",
+  "eslintConfig": {
+    "extends": [
+      "react-app",
+      "react-app/jest"
+    ]
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "scripts": {
+    "client:start": "react-scripts start",
+    "client:build": "react-scripts build",
+    "client:test": "react-scripts test",
+    "client:eject": "react-scripts eject",
+    "blockchain:start": "nodemon entry.js"
+  },
   "devDependencies": {
-    "nodemon": "^2.0.16"
+    "@types/node": "^17.0.34",
+    "nodemon": "^2.0.16",
+    "typescript": "^4.6.4"
   },
   "dependencies": {
+    "@testing-library/jest-dom": "^5.16.4",
+    "@testing-library/react": "^13.2.0",
+    "@testing-library/user-event": "^13.5.0",
     "bcrypt": "^5.0.1",
-    "express": "^4.18.1"
+    "crypto-js": "^4.1.1",
+    "express": "^4.18.1",
+    "react": "^18.1.0",
+    "react-dom": "^18.1.0",
+    "react-scripts": "5.0.1",
+    "web-vitals": "^2.1.4"
   }
 }

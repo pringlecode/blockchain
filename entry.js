@@ -1,65 +1,61 @@
-// Licence MIT
-const bcrypt = require('bcrypt');
-
-class Block { 
-    
-    constructor(index, prevHash, data) { 
+var SHA256 = require('crypto-js/sha256');
+var Block = /** @class */ (function () {
+    function Block(index, previousHash, data) {
         this.index = index;
-        this.time = Date.now();
+        this.timestamp = Date.now();
         this.data = data;
-        this.prevHash = prevHash;
-        this.blockHash = this.calcHash();
+        this.previousHash = previousHash;
+        this.hash = this.calculateHash();
     }
-    
-    calcHash() { 
-        let salty = 10
-        return bcrypt.hashSync(
-            String(this.index + this.prevHash + this.time + JSON.stringify(this.data)),
-            salty
-        );
-    }
-
-};
-
-class BlockChain { 
-    
-    constructor() { 
+    Block.prototype.calculateHash = function () {
+        return SHA256(this.index + this.previousHash + this.timestamp + JSON.stringify(this.data)).toString();
+    };
+    return Block;
+}());
+var BlockChain = /** @class */ (function () {
+    function BlockChain() {
         this.chain = [];
         this.createGenesisBlock();
     }
-
-    createGenesisBlock() { 
-        this.addBlock(new Block({message:"Genesis Block"}))
-    }
-
-    addBlock(data) {
-        let index = this.chain.length;
-        let prevHash = this.chain.length !== 0 ? this.chain[index - 1].blockHash : '';
-        let block = new Block(index, prevHash, data);
+    BlockChain.prototype.createGenesisBlock = function () {
+        this.addBlock({ message: "Genesis Block" });
+    };
+    BlockChain.prototype.getLatestBlock = function () {
+        return this.chain[this.chain.length - 1];
+    };
+    BlockChain.prototype.getLatestBlockHash = function () {
+        return this.chain.length !== 0 ? this.getLatestBlock().hash : '';
+    };
+    BlockChain.prototype.addBlock = function (data) {
+        var index = this.chain.length;
+        var previousHash = this.getLatestBlockHash();
+        var block = new Block(index, previousHash, data);
         this.chain.push(block);
-    }
-
-    isChainValid() { 
-        for (let i = 1; i < this.chain.length; i++) { 
-            const currentBlock = this.chain[i];
-            const previousBlock = this.chain[i - 1];
-            if (currentBlock.blockHash !== currentBlock.calcHash()) { 
+    };
+    BlockChain.prototype.isChainValid = function () {
+        for (var i = 1; i < this.chain.length; i++) {
+            var currentBlock = this.chain[i];
+            var previousBlock = this.chain[i - 1];
+            if (currentBlock.hash !== currentBlock.calculateHash()) {
                 return false;
             }
-            if (currentBlock.prevHash !== previousBlock.blockHash) { 
+            if (currentBlock.previousHash !== previousBlock.hash) {
                 return false;
             }
         }
         return true;
-    }
-
-};
-
-const MyBlockChain = new BlockChain();
-
+    };
+    return BlockChain;
+}());
+;
+// Create the block chain
+var MyBlockChain = new BlockChain();
+// Simulate block creation
 MyBlockChain.addBlock({ message: 'Second Block' });
 MyBlockChain.addBlock({ message: 'Third Block' });
-
 console.log(JSON.stringify(MyBlockChain, null, 1));
-
-console.log('Is Blockchain valid? ' + MyBlockChain.isChainValid())
+console.log('Is Blockchain valid? ' + MyBlockChain.isChainValid());
+// Change the blockchain to ensure validation fails
+// MyBlockChain.chain[1].data.message = "Hello World"
+// console.log(JSON.stringify(MyBlockChain, null, 1));
+// console.log('Is Blockchain valid? ' + MyBlockChain.isChainValid())
