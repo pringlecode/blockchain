@@ -5,16 +5,26 @@ var Block = /** @class */ (function () {
         this.timestamp = Date.now();
         this.data = data;
         this.previousHash = previousHash;
+        this.nonce = 0;
         this.hash = this.calculateHash();
     }
     Block.prototype.calculateHash = function () {
-        return SHA256(this.index + this.previousHash + this.timestamp + JSON.stringify(this.data)).toString();
+        return SHA256(this.index + this.previousHash + this.timestamp + JSON.stringify(this.data) + this.nonce).toString();
+    };
+    Block.prototype.mineBlock = function (difficulty) {
+        while (this.hash.substring(0, difficulty) !== Array(difficulty + 1).join("0")) {
+            this.nonce++;
+            this.hash = this.calculateHash();
+        }
+        console.log("\nBlock Mined!\n\tSolution:\t".concat(this.nonce, "\n\tBlock Number:\t").concat(this.index, "\n\tMessage:\t").concat(this.data['message']));
     };
     return Block;
 }());
 var BlockChain = /** @class */ (function () {
     function BlockChain() {
         this.chain = [];
+        this.chain = [];
+        this.difficulty = 5;
         this.createGenesisBlock();
     }
     BlockChain.prototype.createGenesisBlock = function () {
@@ -30,6 +40,7 @@ var BlockChain = /** @class */ (function () {
         var index = this.chain.length;
         var previousHash = this.getLatestBlockHash();
         var block = new Block(index, previousHash, data);
+        block.mineBlock(this.difficulty);
         this.chain.push(block);
     };
     BlockChain.prototype.isChainValid = function () {
@@ -53,8 +64,8 @@ var MyBlockChain = new BlockChain();
 // Simulate block creation
 MyBlockChain.addBlock({ message: 'Second Block' });
 MyBlockChain.addBlock({ message: 'Third Block' });
-console.log(JSON.stringify(MyBlockChain, null, 1));
-console.log('Is Blockchain valid? ' + MyBlockChain.isChainValid());
+//console.log(JSON.stringify(MyBlockChain, null, 1));
+console.log("\nIs Blockchain valid?\t ".concat(MyBlockChain.isChainValid()));
 // Change the blockchain to ensure validation fails
 // MyBlockChain.chain[1].data.message = "Hello World"
 // console.log(JSON.stringify(MyBlockChain, null, 1));
