@@ -1,4 +1,9 @@
+import { join } from "path";
+
 const SHA256 = require('crypto-js/sha256');
+const EC = require('elliptic').ec;
+
+const ec = new EC('secp256k1');
 
 class Transaction { 
 
@@ -6,6 +11,7 @@ class Transaction {
     receiver: string;
     amount: number;
     message: string;
+    signature: string;
 
     constructor(sender: string, receiver: string, amount: number, message: string) {
         this.sender = sender;
@@ -14,28 +20,51 @@ class Transaction {
         this.message = message;
     }
 
+    calculateHash() : string { 
+        return SHA256(this.sender + this.receiver + this. amount + this.message).toString()
+    }
+
+    signTransaction(signingKey): void {
+        if (signingKey.getPublic('hex') !== this.sender) {
+            throw new Error('You cannot sign transactions for other wallets')
+        } else {
+            const hash: string = this.calculateHash();
+            const signature = signingKey.sign(hash, 'base64');
+            this.signature = signature.toDER('hex');
+        }
+    }
+
+    isValid(): boolean {
+        if (this.sender === null) return true;
+        if (!this.signature || this.signature.length === 0) { 
+            throw new Error('No signature in this transaction');
+        }
+        const publicKey = ec.keyFromPublic(this.sender, 'hex');
+        return publicKey.verify(this.calculateHash(), this.signature);
+    }
+
 }
 
 class Block { 
     
     index: number;
     timestamp: number;
-    data: object;
+    transactions: Transaction[];
     previousHash: string;
     hash: string;
     nonce: number;
 
-    constructor(index: number, previousHash: string, data: object) { 
+    constructor(index: number, previousHash: string, transactions: Transaction[]) { 
         this.index = index;
         this.timestamp = Date.now();
-        this.data = data;
+        this.transactions = transactions;
         this.previousHash = previousHash;
         this.nonce = 0;
         this.hash = this.calculateHash();
     }
     
     calculateHash() : string { 
-        return SHA256(this.index + this.previousHash + this.timestamp + JSON.stringify(this.data) + this.nonce).toString()
+        return SHA256(this.index + this.previousHash + this.timestamp + JSON.stringify(this.transactions) + this.nonce).toString()
     }
 
     mineBlock(difficulty: number) : void { 
@@ -48,7 +77,16 @@ class Block {
 
     display() : void {
         console.log(`\nBlock Mined!\n\tSolution:\t${this.nonce}\n\tBlock Number:\t${this.index}`)
-        console.log(this.data);
+        console.log(this.transactions);
+    }
+
+    hasValidTransactions(): boolean {
+        for (const tx of this.transactions) {
+            if (!tx.isValid()) { 
+                return false;
+            }
+        }
+        return true;
     }
     
 }
@@ -57,7 +95,7 @@ class BlockChain {
     
     chain = []; 
     difficulty: number;
-    pendingTransactions = [];
+    pendingTransactions: Transaction[];
     miningReward: number;
 
     constructor() {
@@ -86,27 +124,33 @@ class BlockChain {
         */
         let index : number = this.chain.length;
         let previousHash: string = this.getLatestBlockHash();
-        let block: Block = new Block(index, previousHash, {
-            transactions: this.pendingTransactions
-        });
+        let block: Block = new Block(index, previousHash, this.pendingTransactions);
         block.mineBlock(this.difficulty);
         this.chain.push(block);
         this.pendingTransactions = [new Transaction(`blockchain`, miningRewardAddress, this.miningReward, `mining reward`)]
     }
 
-    createTransaction(transaction: Transaction): void { 
+    addTransaction(transaction: Transaction): void {
+        if (!transaction.sender || !transaction.receiver) { 
+            throw new Error('Transaction must include sender and receeiver addresses');
+        }
+        if (!transaction.isValid()) {
+            throw new Error('Cannot add invalid transaction to the chain');
+        }
         this.pendingTransactions.push(transaction);
     }
 
-    getBalanceOfAddress(address: string) : number { 
+    getBalanceOfAddress(address: string) : number {
         let balance: number = 0;
         for (const block of this.chain) {
-            for (const transaction of block.data.transactions) {
-                if (transaction.sender === address) { 
-                    balance -= transaction.amount;
-                }
-                if (transaction.receiver === address) {
-                    balance += transaction.amount;
+            if (block.index !== 0) {
+                for (const transaction of block.transactions) {
+                    if (transaction.sender === address) {
+                        balance -= transaction.amount;
+                    }
+                    if (transaction.receiver === address) {
+                        balance += transaction.amount;
+                    }
                 }
             }
         }
@@ -116,8 +160,11 @@ class BlockChain {
     isChainValid() : boolean { 
         for (let i = 1; i < this.chain.length; i++) { 
             const currentBlock : Block = this.chain[i];
-            const previousBlock : Block = this.chain[i - 1];
-            if (currentBlock.hash !== currentBlock.calculateHash()) { 
+            const previousBlock: Block = this.chain[i - 1];
+            if (!currentBlock.hasValidTransactions()) {
+                return false;
+            }
+            if (currentBlock.hash !== currentBlock.calculateHash()) {
                 return false;
             }
             if (currentBlock.previousHash !== previousBlock.hash) { 
